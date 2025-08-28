@@ -16,6 +16,7 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             padding: 20px;
@@ -29,6 +30,7 @@
             text-align: center;
             max-width: 500px;
             width: 100%;
+            flex: 1;
         }
 
         .header {
@@ -115,14 +117,23 @@
             background: #f8f9fa;
             border: 4px solid #dc3545;
             border-radius: 10px;
-            padding: 40px 20px;
+            padding: 20px;
             margin: 0 auto;
             max-width: 320px;
             aspect-ratio: 3/2;
             display: flex;
             flex-direction: column;
             align-items: center;
+            position: relative;
+        }
+
+        .preview-card.with-logo {
+            justify-content: flex-start;
+        }
+
+        .preview-card.without-logo {
             justify-content: center;
+            position: relative;
         }
 
         .preview-name {
@@ -135,8 +146,23 @@
             letter-spacing: 2px;
             text-transform: uppercase;
             line-height: 1.2;
-            margin-top: auto;
-            margin-bottom: auto;
+        }
+
+        .preview-name.with-logo {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 40px);
+        }
+
+        .preview-name.without-logo {
+            margin: auto;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: calc(100% - 40px);
         }
 
         .instructions {
@@ -164,6 +190,15 @@
         /* Canvas oculto para gerar a imagem */
         #pdfCanvas {
             display: none;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: rgba(255,255,255,0.8);
+            font-size: 0.9em;
+            width: 100%;
         }
     </style>
 </head>
@@ -201,9 +236,9 @@
 
         <div class="preview-section">
             <div class="preview-title">Pré-visualização:</div>
-            <div class="preview-card">
-                <div id="logoPreviewCard" style="margin-bottom: 5px; display: none; text-align: center;">
-                    <img id="logoPreviewImg" style="max-width: 80px; max-height: 40px; object-fit: contain;">
+            <div class="preview-card" id="previewCard">
+                <div id="logoPreviewCard" style="margin-top: 2px; display: none; text-align: center;">
+                    <img id="logoPreviewImg" style="max-width: 90px; max-height: 50px; object-fit: contain;">
                 </div>
                 <div class="preview-name" id="previewName">NOME APARECERÁ AQUI</div>
             </div>
@@ -221,6 +256,10 @@
         </div>
     </div>
 
+    <footer>
+        Created by Raquel Pacheco @2025
+    </footer>
+
     <canvas id="pdfCanvas"></canvas>
 
     <script>
@@ -230,7 +269,22 @@
             const previewName = document.getElementById('previewName');
             const name = e.target.value.trim();
             previewName.textContent = name ? name.toUpperCase() : 'NOME APARECERÁ AQUI';
+            updatePreviewLayout();
         });
+
+        function updatePreviewLayout() {
+            const previewCard = document.getElementById('previewCard');
+            const previewName = document.getElementById('previewName');
+            const logoPreviewCard = document.getElementById('logoPreviewCard');
+            
+            if (uploadedLogo) {
+                previewCard.className = 'preview-card with-logo';
+                previewName.className = 'preview-name with-logo';
+            } else {
+                previewCard.className = 'preview-card without-logo';
+                previewName.className = 'preview-name without-logo';
+            }
+        }
 
         document.getElementById('visitorName').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
@@ -252,6 +306,7 @@
                         const logoPreviewImg = document.getElementById('logoPreviewImg');
                         logoPreviewImg.src = event.target.result;
                         logoPreviewCard.style.display = 'block';
+                        updatePreviewLayout();
                     };
                     img.src = event.target.result;
                 };
@@ -260,11 +315,12 @@
                 uploadedLogo = null;
                 document.getElementById('logoPreview').innerHTML = '';
                 document.getElementById('logoPreviewCard').style.display = 'none';
+                updatePreviewLayout();
             }
         });
 
         /**
-         * NOVA FUNÇÃO: Analisa uma imagem e recorta o espaço transparente ao redor dela.
+         * Analisa uma imagem e recorta o espaço transparente ao redor dela.
          * Retorna uma nova imagem (em um canvas) apenas com o conteúdo visível.
          */
         function getTrimmedLogo(img) {
@@ -349,39 +405,38 @@
                 
                 ctx.font = `900 ${fontSize}px Impact, 'Arial Black', sans-serif`;
                 
-                let textY;
+                // Nome posicionado um pouco abaixo do centro para dar espaço ao logo
+                const textY = uploadedLogo ? (height / 2) + 200 : height / 2;
 
                 if (uploadedLogo) {
-                    // ETAPA 1: Recorta o espaço vazio do logo
+                    // Recorta o espaço vazio do logo
                     const logoSource = getTrimmedLogo(uploadedLogo);
 
-                    // ETAPA 2: Define a área máxima para o logo já recortado
-                    const boxWidth = 2800; 
-                    const boxHeight = 1000;
+                    // Define a área disponível para o logo (metade superior da placa, com espaçamento)
+                    const availableLogoWidth = width - (margin * 2) - 400; // Margem lateral generosa
+                    const availableLogoHeight = Math.min(600, (height / 2) - margin - 300); // Altura limitada para não tapar o texto
 
                     const logoAspect = logoSource.width / logoSource.height;
-                    const boxAspect = boxWidth / boxHeight;
+                    const availableAspect = availableLogoWidth / availableLogoHeight;
 
                     let finalLogoWidth, finalLogoHeight;
 
-                    if (logoAspect > boxAspect) {
-                        finalLogoWidth = boxWidth;
+                    // Redimensiona o logo respeitando os limites
+                    if (logoAspect > availableAspect) {
+                        // Logo é mais largo que o espaço disponível
+                        finalLogoWidth = availableLogoWidth;
                         finalLogoHeight = finalLogoWidth / logoAspect;
                     } else {
-                        finalLogoHeight = boxHeight;
+                        // Logo é mais alto que o espaço disponível
+                        finalLogoHeight = availableLogoHeight;
                         finalLogoWidth = finalLogoHeight * logoAspect;
                     }
 
-                    // ETAPA 3: Desenha o logo recortado e ampliado
+                    // Centraliza o logo horizontalmente e posiciona na parte superior com espaçamento
                     const logoX = (width - finalLogoWidth) / 2;
-                    const logoCenterY = (margin + boxHeight / 2);
-                    const logoY = logoCenterY - (finalLogoHeight / 2);
-                    ctx.drawImage(logoSource, logoX, logoY, finalLogoWidth, finalLogoHeight);
-                    
-                    textY = (height / 2) + 500; 
+                    const logoY = margin + 100; // Margem do topo
 
-                } else {
-                    textY = height / 2;
+                    ctx.drawImage(logoSource, logoX, logoY, finalLogoWidth, finalLogoHeight);
                 }
                 
                 function wrapText(context, text, x, y, maxWidth, lineHeight) {
