@@ -326,11 +326,6 @@
                     fontSize = 350;
                 }
                 
-                // Ajustar fonte se há logo - removi o limite para dar mais espaço ao nome, se necessário
-                // if (uploadedLogo) {
-                //     fontSize = Math.min(fontSize, 500);
-                // }
-                
                 ctx.font = `900 ${fontSize}px Impact, 'Arial Black', sans-serif`;
                 
                 let textY; // Variável para a posição vertical do texto
@@ -339,8 +334,8 @@
                 if (uploadedLogo) {
                     // Calcular dimensões do logo
                     const logoAspect = uploadedLogo.width / uploadedLogo.height;
-                    const logoMaxWidth = 1000; // Aumentado para permitir logo maior
-                    const logoMaxHeight = 500; // Aumentado para permitir logo maior
+                    const logoMaxWidth = 1200; // Aumentado para permitir logo maior
+                    const logoMaxHeight = 600; // Aumentado para permitir logo maior
                     let logoWidth = Math.min(logoMaxWidth, uploadedLogo.width);
                     let logoHeight = logoWidth / logoAspect;
                     
@@ -349,9 +344,9 @@
                         logoWidth = logoHeight * logoAspect;
                     }
                     
-                    // Posiciona o centro do logo 550 pixels ACIMA do centro da tela para ficar mais perto do topo
+                    // Posiciona o centro do logo 800 pixels ACIMA do centro da tela para ficar MUITO mais perto do topo
                     const logoX = (width - logoWidth) / 2;
-                    const logoCenterY = (height / 2) - 550; // Ajustado para subir mais o logo
+                    const logoCenterY = (height / 2) - 800; // Ajustado para subir ainda mais o logo
                     const logoY = logoCenterY - (logoHeight / 2);
                     
                     ctx.drawImage(uploadedLogo, logoX, logoY, logoWidth, logoHeight);
