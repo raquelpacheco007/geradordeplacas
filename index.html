@@ -226,21 +226,18 @@
     <script>
         let uploadedLogo = null;
 
-        // Atualizar pré-visualização em tempo real
         document.getElementById('visitorName').addEventListener('input', function(e) {
             const previewName = document.getElementById('previewName');
             const name = e.target.value.trim();
             previewName.textContent = name ? name.toUpperCase() : 'NOME APARECERÁ AQUI';
         });
 
-        // Permitir gerar placa pressionando Enter
         document.getElementById('visitorName').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 generatePlaca();
             }
         });
 
-        // Gerenciar upload do logo
         document.getElementById('logoUpload').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
@@ -249,12 +246,8 @@
                     const img = new Image();
                     img.onload = function() {
                         uploadedLogo = img;
-                        
-                        // Mostrar preview do logo
                         const logoPreview = document.getElementById('logoPreview');
                         logoPreview.innerHTML = `<img src="${event.target.result}" style="max-width: 100px; max-height: 50px; object-fit: contain; border: 1px solid #ddd; border-radius: 5px;">`;
-                        
-                        // Mostrar logo no card de preview
                         const logoPreviewCard = document.getElementById('logoPreviewCard');
                         const logoPreviewImg = document.getElementById('logoPreviewImg');
                         logoPreviewImg.src = event.target.result;
@@ -270,6 +263,48 @@
             }
         });
 
+        /**
+         * NOVA FUNÇÃO: Analisa uma imagem e recorta o espaço transparente ao redor dela.
+         * Retorna uma nova imagem (em um canvas) apenas com o conteúdo visível.
+         */
+        function getTrimmedLogo(img) {
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            const imgWidth = img.width;
+            const imgHeight = img.height;
+            tempCanvas.width = imgWidth;
+            tempCanvas.height = imgHeight;
+            tempCtx.drawImage(img, 0, 0);
+
+            const imageData = tempCtx.getImageData(0, 0, imgWidth, imgHeight).data;
+            let top = imgHeight, bottom = -1, left = imgWidth, right = -1;
+
+            for (let y = 0; y < imgHeight; y++) {
+                for (let x = 0; x < imgWidth; x++) {
+                    const alpha = imageData[(y * imgWidth + x) * 4 + 3];
+                    if (alpha > 0) {
+                        if (x < left) left = x;
+                        if (x > right) right = x;
+                        if (y < top) top = y;
+                        if (y > bottom) bottom = y;
+                    }
+                }
+            }
+
+            if (bottom > -1) { // Se encontrou algum pixel não transparente
+                const trimmedWidth = right - left + 1;
+                const trimmedHeight = bottom - top + 1;
+                const trimmedCanvas = document.createElement('canvas');
+                trimmedCanvas.width = trimmedWidth;
+                trimmedCanvas.height = trimmedHeight;
+                const trimmedCtx = trimmedCanvas.getContext('2d');
+                trimmedCtx.drawImage(img, left, top, trimmedWidth, trimmedHeight, 0, 0, trimmedWidth, trimmedHeight);
+                return trimmedCanvas;
+            }
+
+            return img; // Retorna a original se a imagem for totalmente transparente
+        }
+
         function generatePlaca() {
             const visitorName = document.getElementById('visitorName').value.trim();
             
@@ -283,94 +318,79 @@
                 const canvas = document.getElementById('pdfCanvas');
                 const ctx = canvas.getContext('2d');
                 
-                // Configurar canvas para A4 paisagem em alta resolução (3508 x 2480 pixels para 300dpi)
                 const width = 3508;
                 const height = 2480;
                 canvas.width = width;
                 canvas.height = height;
                 
-                // Fundo branco
                 ctx.fillStyle = 'white';
                 ctx.fillRect(0, 0, width, height);
                 
-                // Borda vermelha com margem
+                const margin = 150;
                 ctx.strokeStyle = '#dc3545';
                 ctx.lineWidth = 16;
-                const margin = 150;
                 ctx.strokeRect(margin, margin, width - (margin * 2), height - (margin * 2));
                 
                 const nameUpperCase = visitorName.toUpperCase();
                 
-                // Configurar propriedades do texto
                 ctx.fillStyle = 'black';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 
-                // Calcular tamanho da fonte baseado no comprimento do nome
                 let fontSize;
-                if (nameUpperCase.length <= 4) {
-                    fontSize = 700;
-                } else if (nameUpperCase.length <= 6) {
-                    fontSize = 650;
-                } else if (nameUpperCase.length <= 8) {
-                    fontSize = 600;
-                } else if (nameUpperCase.length <= 12) {
-                    fontSize = 550;
-                } else if (nameUpperCase.length <= 15) {
-                    fontSize = 500;
-                } else if (nameUpperCase.length <= 20) {
-                    fontSize = 450;
-                } else if (nameUpperCase.length <= 25) {
-                    fontSize = 400;
-                } else {
-                    fontSize = 350;
-                }
+                if (nameUpperCase.length <= 4) fontSize = 700;
+                else if (nameUpperCase.length <= 6) fontSize = 650;
+                else if (nameUpperCase.length <= 8) fontSize = 600;
+                else if (nameUpperCase.length <= 12) fontSize = 550;
+                else if (nameUpperCase.length <= 15) fontSize = 500;
+                else if (nameUpperCase.length <= 20) fontSize = 450;
+                else if (nameUpperCase.length <= 25) fontSize = 400;
+                else fontSize = 350;
                 
                 ctx.font = `900 ${fontSize}px Impact, 'Arial Black', sans-serif`;
                 
-                let textY; // Variável para a posição vertical do texto
+                let textY;
 
-                // Se há logo, posicionar o logo e o texto em áreas distintas para evitar sobreposição
                 if (uploadedLogo) {
-                    // Calcular dimensões do logo
-                    const logoAspect = uploadedLogo.width / uploadedLogo.height;
-                    const logoMaxWidth = 1200; // Aumentado para permitir logo maior
-                    const logoMaxHeight = 600; // Aumentado para permitir logo maior
-                    let logoWidth = Math.min(logoMaxWidth, uploadedLogo.width);
-                    let logoHeight = logoWidth / logoAspect;
-                    
-                    if (logoHeight > logoMaxHeight) {
-                        logoHeight = logoMaxHeight;
-                        logoWidth = logoHeight * logoAspect;
+                    // ETAPA 1: Recorta o espaço vazio do logo
+                    const logoSource = getTrimmedLogo(uploadedLogo);
+
+                    // ETAPA 2: Define a área máxima para o logo já recortado
+                    const boxWidth = 2800; 
+                    const boxHeight = 1000;
+
+                    const logoAspect = logoSource.width / logoSource.height;
+                    const boxAspect = boxWidth / boxHeight;
+
+                    let finalLogoWidth, finalLogoHeight;
+
+                    if (logoAspect > boxAspect) {
+                        finalLogoWidth = boxWidth;
+                        finalLogoHeight = finalLogoWidth / logoAspect;
+                    } else {
+                        finalLogoHeight = boxHeight;
+                        finalLogoWidth = finalLogoHeight * logoAspect;
                     }
+
+                    // ETAPA 3: Desenha o logo recortado e ampliado
+                    const logoX = (width - finalLogoWidth) / 2;
+                    const logoCenterY = (margin + boxHeight / 2);
+                    const logoY = logoCenterY - (finalLogoHeight / 2);
+                    ctx.drawImage(logoSource, logoX, logoY, finalLogoWidth, finalLogoHeight);
                     
-                    // Posiciona o centro do logo 800 pixels ACIMA do centro da tela para ficar MUITO mais perto do topo
-                    const logoX = (width - logoWidth) / 2;
-                    const logoCenterY = (height / 2) - 800; // Ajustado para subir ainda mais o logo
-                    const logoY = logoCenterY - (logoHeight / 2);
-                    
-                    ctx.drawImage(uploadedLogo, logoX, logoY, logoWidth, logoHeight);
-                    
-                    // Posiciona o centro do bloco de texto 200 pixels ABAIXO do centro da tela
-                    textY = (height / 2) + 200; // Mantido para que o texto continue na parte inferior
-                    
+                    textY = (height / 2) + 500; 
+
                 } else {
-                    // Se não há logo, o texto fica perfeitamente centralizado
                     textY = height / 2;
                 }
                 
-                // Função para quebrar texto em linhas se necessário (sem alterações)
                 function wrapText(context, text, x, y, maxWidth, lineHeight) {
                     const words = text.split(' ');
-                    let line = '';
-                    const lines = [];
-                    
+                    let line = '', lines = [];
                     for (let n = 0; n < words.length; n++) {
                         const testLine = line + words[n] + ' ';
                         const metrics = context.measureText(testLine);
-                        const testWidth = metrics.width;
-                        
-                        if (testWidth > maxWidth && n > 0) {
+                        if (metrics.width > maxWidth && n > 0) {
                             lines.push(line.trim());
                             line = words[n] + ' ';
                         } else {
@@ -378,61 +398,41 @@
                         }
                     }
                     lines.push(line.trim());
-                    
-                    // Centralizar verticalmente o bloco de texto baseado no número de linhas
                     const startY = y - ((lines.length - 1) * lineHeight) / 2;
-                    
-                    // Desenhar cada linha
                     for (let i = 0; i < lines.length; i++) {
                         context.fillText(lines[i], x, startY + (i * lineHeight));
                     }
                 }
                 
-                // Área disponível para texto (dentro da borda)
                 const textAreaWidth = width - (margin * 2) - 200;
                 const lineHeight = fontSize * 1.2;
-                
-                // Desenhar o texto com quebra automática na posição Y calculada
                 wrapText(ctx, nameUpperCase, width / 2, textY, textAreaWidth, lineHeight);
                 
-                // Converter canvas para imagem JPG em alta resolução
                 canvas.toBlob(function(blob) {
                     const url = URL.createObjectURL(blob);
-                    
-                    // Criar elemento de link para download
                     const link = document.createElement('a');
                     const now = new Date();
                     const timestamp = now.toISOString().slice(0,16).replace(/[:-]/g,'').replace('T','-');
-                    const filename = `placa-receptivo-${nameUpperCase.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '-')}-${timestamp}.jpg`;
-                    
                     link.href = url;
-                    link.download = filename;
+                    link.download = `placa-receptivo-${nameUpperCase.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '-')}-${timestamp}.jpg`;
                     link.style.display = 'none';
-                    
-                    // Adicionar ao DOM, clicar e remover
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
-                    
-                    // Limpar URL
                     setTimeout(() => URL.revokeObjectURL(url), 100);
                     
-                    // Feedback de sucesso
                     setTimeout(() => {
                         alert('✅ Placa gerada com sucesso!\n\nA imagem foi salva em JPG alta resolução (300dpi) formato paisagem.');
                     }, 500);
                     
-                    // Feedback visual
                     const btn = document.querySelector('.generate-btn');
                     const originalText = btn.textContent;
                     btn.textContent = '✅ Placa Gerada!';
                     btn.style.background = '#28a745';
-                    
                     setTimeout(() => {
                         btn.textContent = originalText;
                         btn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
                     }, 3000);
-                    
                 }, 'image/jpeg', 0.95);
                 
             } catch (error) {
