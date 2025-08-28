@@ -1,62 +1,65 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Placa de Boas-vindas</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>X4 Growth</title>
   <style>
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      background-color: #f5f5f5;
-    }
-
-    .placa {
-      width: 800px;
-      height: 500px;
-      margin: 50px auto;
-      border: 5px solid red;
-      position: relative;
-      background-color: white;
+      background-color: #000;
+      color: #fff;
       text-align: center;
-      padding-top: 140px; /* espaço pro logo não colidir com o nome */
     }
 
-    /* Logo fixada no topo */
-    .placa img.logo {
+    header {
+      background-color: red;
+      padding: 140px 20px 40px; /* espaço maior em cima pra logo */
+      position: relative;
+    }
+
+    header img.logo {
       position: absolute;
-      top: 15px;   /* encosta perto da borda vermelha de cima */
+      top: 20px;   /* encosta mais na borda vermelha superior */
       left: 50%;
       transform: translateX(-50%);
-      width: 160px;   /* aumentei o tamanho */
-      height: auto;
+      width: 160px; /* aumentei o tamanho da logo */
     }
 
-    .placa h1 {
-      font-size: 40px;
-      margin: 20px 0 0;
+    header h1 {
+      margin: 0; /* remove o espaço extra do título */
+      font-size: 2.5em;
     }
 
-    .placa h2 {
-      font-size: 28px;
-      margin: 10px 0 0;
-      font-weight: normal;
-    }
-
-    .placa .mensagem {
-      position: absolute;
-      bottom: 30px;
-      width: 100%;
-      font-size: 22px;
-      font-style: italic;
+    footer {
+      background-color: #111;
+      color: #aaa;
+      padding: 15px;
+      font-size: 0.9em;
     }
   </style>
 </head>
 <body>
-  <div class="placa">
-    <img src="logo.png" alt="Logo" class="logo">
-    <h1>Bem-vindo(a), Raquel!</h1>
-    <h2>É uma alegria ter você aqui</h2>
-    <div class="mensagem">Sinta-se em casa 💙</div>
-  </div>
+  <header>
+    <img src="logo.png" alt="Logo X4 Growth" class="logo" />
+    <h1>Bem-vindo, <span id="visitorName">Visitante</span>!</h1>
+  </header>
+
+  <main>
+    <p>Este é o site de apresentação do programa desenvolvido pela Raquel 🚀</p>
+  </main>
+
+  <footer>
+    <p>Raquel Pacheco - 2025</p>
+  </footer>
+
+  <script>
+    // Pede o nome do visitante
+    const name = prompt("Qual é o seu nome?");
+    if (name) {
+      document.getElementById("visitorName").innerText = name;
+    }
+  </script>
 </body>
 </html>
