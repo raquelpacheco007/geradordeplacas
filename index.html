@@ -221,7 +221,6 @@
         </div>
     </div>
 
-    <!-- Canvas oculto para gerar a imagem -->
     <canvas id="pdfCanvas"></canvas>
 
     <script>
@@ -302,38 +301,9 @@
                 
                 const nameUpperCase = visitorName.toUpperCase();
                 
-                // Calcular posições e tamanhos considerando o logo
-                let logoHeight = 0;
-                const logoMaxWidth = Math.min(width * 0.25, 900); // Logo menor - até 25% da largura
-                const logoMaxHeight = 400; // Logo menor
-                
-                // Se há logo, desenhar primeiro
-            if (uploadedLogo) {
-                // Calcular dimensões do logo mantendo proporção
-                const logoAspect = uploadedLogo.width / uploadedLogo.height;
-                let logoWidth = Math.min(logoMaxWidth, uploadedLogo.width * 2); // aumentei o multiplicador p/ logo maior
-                    logoHeight = logoWidth / logoAspect;
-    
-                if (logoHeight > logoMaxHeight) {
-                    logoHeight = logoMaxHeight;
-                    logoWidth = logoHeight * logoAspect;
-                }
-    
-                // Posicionar logo perto da borda superior (acima do nome)
-                const logoX = (width - logoWidth) / 2;
-                const logoY = margin + 40; // deixa um espaço da borda vermelha superior
-    
-                ctx.drawImage(uploadedLogo, logoX, logoY, logoWidth, logoHeight);
+                // --- INÍCIO DA SEÇÃO CORRIGIDA ---
 
-                // Agora empurra o nome um pouco mais pra baixo
-               textY = logoY + logoHeight + 150;
-             } else {
-               // Se não tiver logo, o nome fica centralizado
-              textY = height / 2;
-             }
-
-                
-                // Configurar texto do nome
+                // Configurar propriedades do texto
                 ctx.fillStyle = 'black';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
@@ -365,7 +335,38 @@
                 
                 ctx.font = `900 ${fontSize}px Impact, 'Arial Black', sans-serif`;
                 
-                // Função para quebrar texto em linhas se necessário
+                let textY; // Variável para a posição vertical do texto
+
+                // Se há logo, posicionar o logo e o texto em áreas distintas para evitar sobreposição
+                if (uploadedLogo) {
+                    // Calcular dimensões do logo
+                    const logoAspect = uploadedLogo.width / uploadedLogo.height;
+                    const logoMaxWidth = 800;
+                    const logoMaxHeight = 350;
+                    let logoWidth = Math.min(logoMaxWidth, uploadedLogo.width);
+                    let logoHeight = logoWidth / logoAspect;
+                    
+                    if (logoHeight > logoMaxHeight) {
+                        logoHeight = logoMaxHeight;
+                        logoWidth = logoHeight * logoAspect;
+                    }
+                    
+                    // Posiciona o centro do logo 300 pixels ACIMA do centro da tela
+                    const logoX = (width - logoWidth) / 2;
+                    const logoCenterY = (height / 2) - 300;
+                    const logoY = logoCenterY - (logoHeight / 2);
+                    
+                    ctx.drawImage(uploadedLogo, logoX, logoY, logoWidth, logoHeight);
+                    
+                    // Posiciona o centro do bloco de texto 200 pixels ABAIXO do centro da tela
+                    textY = (height / 2) + 200;
+
+                } else {
+                    // Se não há logo, o texto fica perfeitamente centralizado
+                    textY = height / 2;
+                }
+                
+                // Função para quebrar texto em linhas se necessário (sem alterações)
                 function wrapText(context, text, x, y, maxWidth, lineHeight) {
                     const words = text.split(' ');
                     let line = '';
@@ -385,7 +386,7 @@
                     }
                     lines.push(line.trim());
                     
-                    // Centralizar verticalmente baseado no número de linhas
+                    // Centralizar verticalmente o bloco de texto baseado no número de linhas
                     const startY = y - ((lines.length - 1) * lineHeight) / 2;
                     
                     // Desenhar cada linha
@@ -398,16 +399,10 @@
                 const textAreaWidth = width - (margin * 2) - 200;
                 const lineHeight = fontSize * 1.2;
                 
-                // Posicionar texto sempre centralizado verticalmente
-                let textY = height / 2;
-                
-                // Se há logo, ajustar posição do texto ligeiramente para baixo
-                if (uploadedLogo) {
-                    textY = height / 2 + 50; // Pequeno ajuste para baixo, mantendo próximo ao centro
-                }
-                
-                // Desenhar o texto com quebra automática
+                // Desenhar o texto com quebra automática na posição Y calculada
                 wrapText(ctx, nameUpperCase, width / 2, textY, textAreaWidth, lineHeight);
+
+                // --- FIM DA SEÇÃO CORRIGIDA ---
                 
                 // Converter canvas para imagem JPG em alta resolução
                 canvas.toBlob(function(blob) {
