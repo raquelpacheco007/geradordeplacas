@@ -1,65 +1,459 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>X4 Growth</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background-color: #000;
-      color: #fff;
-      text-align: center;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Placas de Receptivo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    header {
-      background-color: red;
-      padding: 140px 20px 40px; /* espaço maior em cima pra logo */
-      position: relative;
-    }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
 
-    header img.logo {
-      position: absolute;
-      top: 20px;   /* encosta mais na borda vermelha superior */
-      left: 50%;
-      transform: translateX(-50%);
-      width: 160px; /* aumentei o tamanho da logo */
-    }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
 
-    header h1 {
-      margin: 0; /* remove o espaço extra do título */
-      font-size: 2.5em;
-    }
+        .header {
+            margin-bottom: 30px;
+        }
 
-    footer {
-      background-color: #111;
-      color: #aaa;
-      padding: 15px;
-      font-size: 0.9em;
-    }
-  </style>
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .input-group {
+            margin: 30px 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: #555;
+            font-weight: 600;
+            text-align: left;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e1e1;
+            border-radius: 10px;
+            font-size: 1.1em;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .generate-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(102,126,234,0.4);
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102,126,234,0.6);
+        }
+
+        .generate-btn:active {
+            transform: translateY(0);
+        }
+
+        .generate-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .preview-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #f0f0f0;
+        }
+
+        .preview-title {
+            color: #555;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .preview-card {
+            background: #f8f9fa;
+            border: 4px solid #dc3545;
+            border-radius: 10px;
+            padding: 40px 20px;
+            margin: 0 auto;
+            max-width: 320px;
+            aspect-ratio: 3/2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .preview-name {
+            font-size: 1.6em;
+            font-weight: 900;
+            font-family: Impact, 'Arial Black', 'Helvetica Neue', Arial, sans-serif;
+            color: #000;
+            text-align: center;
+            word-break: break-word;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            line-height: 1.2;
+            margin-top: auto;
+            margin-bottom: auto;
+        }
+
+        .instructions {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .instructions h3 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+
+        .instructions ul {
+            color: #555;
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 5px;
+        }
+
+        /* Canvas oculto para gerar a imagem */
+        #pdfCanvas {
+            display: none;
+        }
+    </style>
 </head>
 <body>
-  <header>
-    <img src="logo.png" alt="Logo X4 Growth" class="logo" />
-    <h1>Bem-vindo, <span id="visitorName">Visitante</span>!</h1>
-  </header>
+    <div class="container">
+        <div class="header">
+            <h1>Gerador de Placas de Receptivo</h1>
+            <p class="subtitle">Crie placas profissionais em JPG alta resolução instantaneamente</p>
+        </div>
 
-  <main>
-    <p>Este é o site de apresentação do programa desenvolvido pela Raquel 🚀</p>
-  </main>
+        <div class="input-group">
+            <label for="visitorName">Nome do Visitante:</label>
+            <input 
+                type="text" 
+                id="visitorName" 
+                placeholder="Digite o nome do visitante aqui..."
+                maxlength="50"
+            >
+        </div>
 
-  <footer>
-    <p>Raquel Pacheco - 2025</p>
-  </footer>
+        <div class="input-group">
+            <label for="logoUpload">Logo da Empresa (opcional):</label>
+            <input 
+                type="file" 
+                id="logoUpload" 
+                accept="image/*"
+                style="width: 100%; padding: 15px; border: 2px solid #e1e1e1; border-radius: 10px; font-size: 1em; transition: border-color 0.3s ease;"
+            >
+            <div id="logoPreview" style="margin-top: 10px; text-align: center;"></div>
+        </div>
 
-  <script>
-    // Pede o nome do visitante
-    const name = prompt("Qual é o seu nome?");
-    if (name) {
-      document.getElementById("visitorName").innerText = name;
-    }
-  </script>
+        <button class="generate-btn" onclick="generatePlaca()">
+            📋 Gerar Placa
+        </button>
+
+        <div class="preview-section">
+            <div class="preview-title">Pré-visualização:</div>
+            <div class="preview-card">
+                <div id="logoPreviewCard" style="margin-bottom: 5px; display: none; text-align: center;">
+                    <img id="logoPreviewImg" style="max-width: 80px; max-height: 40px; object-fit: contain;">
+                </div>
+                <div class="preview-name" id="previewName">NOME APARECERÁ AQUI</div>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h3>Como usar:</h3>
+            <ul>
+                <li>Digite o nome do visitante no campo acima</li>
+                <li>Carregue um logo da empresa (opcional)</li>
+                <li>Veja a pré-visualização da placa</li>
+                <li>Clique em "Gerar Placa" para baixar</li>
+                <li>A imagem será criada em JPG alta resolução formato paisagem</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Canvas oculto para gerar a imagem -->
+    <canvas id="pdfCanvas"></canvas>
+
+    <script>
+        let uploadedLogo = null;
+
+        // Atualizar pré-visualização em tempo real
+        document.getElementById('visitorName').addEventListener('input', function(e) {
+            const previewName = document.getElementById('previewName');
+            const name = e.target.value.trim();
+            previewName.textContent = name ? name.toUpperCase() : 'NOME APARECERÁ AQUI';
+        });
+
+        // Permitir gerar placa pressionando Enter
+        document.getElementById('visitorName').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                generatePlaca();
+            }
+        });
+
+        // Gerenciar upload do logo
+        document.getElementById('logoUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        uploadedLogo = img;
+                        
+                        // Mostrar preview do logo
+                        const logoPreview = document.getElementById('logoPreview');
+                        logoPreview.innerHTML = `<img src="${event.target.result}" style="max-width: 100px; max-height: 50px; object-fit: contain; border: 1px solid #ddd; border-radius: 5px;">`;
+                        
+                        // Mostrar logo no card de preview
+                        const logoPreviewCard = document.getElementById('logoPreviewCard');
+                        const logoPreviewImg = document.getElementById('logoPreviewImg');
+                        logoPreviewImg.src = event.target.result;
+                        logoPreviewCard.style.display = 'block';
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                uploadedLogo = null;
+                document.getElementById('logoPreview').innerHTML = '';
+                document.getElementById('logoPreviewCard').style.display = 'none';
+            }
+        });
+
+        function generatePlaca() {
+            const visitorName = document.getElementById('visitorName').value.trim();
+            
+            if (!visitorName) {
+                alert('Por favor, digite o nome do visitante!');
+                document.getElementById('visitorName').focus();
+                return;
+            }
+
+            try {
+                const canvas = document.getElementById('pdfCanvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Configurar canvas para A4 paisagem em alta resolução (3508 x 2480 pixels para 300dpi)
+                const width = 3508;
+                const height = 2480;
+                canvas.width = width;
+                canvas.height = height;
+                
+                // Fundo branco
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, width, height);
+                
+                // Borda vermelha com margem
+                ctx.strokeStyle = '#dc3545';
+                ctx.lineWidth = 16;
+                const margin = 150;
+                ctx.strokeRect(margin, margin, width - (margin * 2), height - (margin * 2));
+                
+                const nameUpperCase = visitorName.toUpperCase();
+                
+                // Calcular posições e tamanhos considerando o logo
+                let logoHeight = 0;
+                const logoMaxWidth = Math.min(width * 0.25, 900); // Logo menor - até 25% da largura
+                const logoMaxHeight = 400; // Logo menor
+                
+                // Se há logo, desenhar primeiro
+            if (uploadedLogo) {
+                // Calcular dimensões do logo mantendo proporção
+                const logoAspect = uploadedLogo.width / uploadedLogo.height;
+                let logoWidth = Math.min(logoMaxWidth, uploadedLogo.width * 2); // aumentei o multiplicador p/ logo maior
+                    logoHeight = logoWidth / logoAspect;
+    
+                if (logoHeight > logoMaxHeight) {
+                    logoHeight = logoMaxHeight;
+                    logoWidth = logoHeight * logoAspect;
+                }
+    
+                // Posicionar logo perto da borda superior (acima do nome)
+                const logoX = (width - logoWidth) / 2;
+                const logoY = margin + 40; // deixa um espaço da borda vermelha superior
+    
+                ctx.drawImage(uploadedLogo, logoX, logoY, logoWidth, logoHeight);
+
+                // Agora empurra o nome um pouco mais pra baixo
+               textY = logoY + logoHeight + 150;
+             } else {
+               // Se não tiver logo, o nome fica centralizado
+              textY = height / 2;
+             }
+
+                
+                // Configurar texto do nome
+                ctx.fillStyle = 'black';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                // Calcular tamanho da fonte baseado no comprimento do nome
+                let fontSize;
+                if (nameUpperCase.length <= 4) {
+                    fontSize = 700;
+                } else if (nameUpperCase.length <= 6) {
+                    fontSize = 650;
+                } else if (nameUpperCase.length <= 8) {
+                    fontSize = 600;
+                } else if (nameUpperCase.length <= 12) {
+                    fontSize = 550;
+                } else if (nameUpperCase.length <= 15) {
+                    fontSize = 500;
+                } else if (nameUpperCase.length <= 20) {
+                    fontSize = 450;
+                } else if (nameUpperCase.length <= 25) {
+                    fontSize = 400;
+                } else {
+                    fontSize = 350;
+                }
+                
+                // Ajustar fonte se há logo
+                if (uploadedLogo) {
+                    fontSize = Math.min(fontSize, 500);
+                }
+                
+                ctx.font = `900 ${fontSize}px Impact, 'Arial Black', sans-serif`;
+                
+                // Função para quebrar texto em linhas se necessário
+                function wrapText(context, text, x, y, maxWidth, lineHeight) {
+                    const words = text.split(' ');
+                    let line = '';
+                    const lines = [];
+                    
+                    for (let n = 0; n < words.length; n++) {
+                        const testLine = line + words[n] + ' ';
+                        const metrics = context.measureText(testLine);
+                        const testWidth = metrics.width;
+                        
+                        if (testWidth > maxWidth && n > 0) {
+                            lines.push(line.trim());
+                            line = words[n] + ' ';
+                        } else {
+                            line = testLine;
+                        }
+                    }
+                    lines.push(line.trim());
+                    
+                    // Centralizar verticalmente baseado no número de linhas
+                    const startY = y - ((lines.length - 1) * lineHeight) / 2;
+                    
+                    // Desenhar cada linha
+                    for (let i = 0; i < lines.length; i++) {
+                        context.fillText(lines[i], x, startY + (i * lineHeight));
+                    }
+                }
+                
+                // Área disponível para texto (dentro da borda)
+                const textAreaWidth = width - (margin * 2) - 200;
+                const lineHeight = fontSize * 1.2;
+                
+                // Posicionar texto sempre centralizado verticalmente
+                let textY = height / 2;
+                
+                // Se há logo, ajustar posição do texto ligeiramente para baixo
+                if (uploadedLogo) {
+                    textY = height / 2 + 50; // Pequeno ajuste para baixo, mantendo próximo ao centro
+                }
+                
+                // Desenhar o texto com quebra automática
+                wrapText(ctx, nameUpperCase, width / 2, textY, textAreaWidth, lineHeight);
+                
+                // Converter canvas para imagem JPG em alta resolução
+                canvas.toBlob(function(blob) {
+                    const url = URL.createObjectURL(blob);
+                    
+                    // Criar elemento de link para download
+                    const link = document.createElement('a');
+                    const now = new Date();
+                    const timestamp = now.toISOString().slice(0,16).replace(/[:-]/g,'').replace('T','-');
+                    const filename = `placa-receptivo-${nameUpperCase.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '-')}-${timestamp}.jpg`;
+                    
+                    link.href = url;
+                    link.download = filename;
+                    link.style.display = 'none';
+                    
+                    // Adicionar ao DOM, clicar e remover
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    // Limpar URL
+                    setTimeout(() => URL.revokeObjectURL(url), 100);
+                    
+                    // Feedback de sucesso
+                    setTimeout(() => {
+                        alert('✅ Placa gerada com sucesso!\n\nA imagem foi salva em JPG alta resolução (300dpi) formato paisagem.');
+                    }, 500);
+                    
+                    // Feedback visual
+                    const btn = document.querySelector('.generate-btn');
+                    const originalText = btn.textContent;
+                    btn.textContent = '✅ Placa Gerada!';
+                    btn.style.background = '#28a745';
+                    
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                        btn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                    }, 3000);
+                    
+                }, 'image/jpeg', 0.95);
+                
+            } catch (error) {
+                console.error('Erro ao gerar placa:', error);
+                alert('Erro ao gerar placa. Tente novamente.');
+            }
+        }
+    </script>
 </body>
 </html>
