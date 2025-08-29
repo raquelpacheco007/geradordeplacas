@@ -136,6 +136,11 @@
             position: relative;
         }
 
+        .preview-card.logo-only {
+            justify-content: center;
+            align-items: center;
+        }
+
         .preview-name {
             font-size: 1.6em;
             font-weight: 900;
@@ -163,6 +168,16 @@
             left: 50%;
             transform: translate(-50%, -50%);
             width: calc(100% - 40px);
+        }
+
+        .preview-name.hidden {
+            display: none;
+        }
+
+        .logo-large {
+            max-width: 200px;
+            max-height: 120px;
+            object-fit: contain;
         }
 
         .instructions {
@@ -210,17 +225,17 @@
         </div>
 
         <div class="input-group">
-            <label for="visitorName">Nome do Visitante:</label>
+            <label for="visitorName">Nome do Visitante (opcional):</label>
             <input 
                 type="text" 
                 id="visitorName" 
-                placeholder="Digite o nome do visitante aqui..."
+                placeholder="Digite o nome do visitante aqui ou deixe vazio para placa só com logo..."
                 maxlength="50"
             >
         </div>
 
         <div class="input-group">
-            <label for="logoUpload">Logo da Empresa (opcional):</label>
+            <label for="logoUpload">Logo da Empresa:</label>
             <input 
                 type="file" 
                 id="logoUpload" 
@@ -247,11 +262,12 @@
         <div class="instructions">
             <h3>Como usar:</h3>
             <ul>
-                <li>Digite o nome do visitante no campo acima</li>
-                <li>Carregue um logo da empresa (opcional)</li>
+                <li>Digite o nome do visitante (opcional)</li>
+                <li>Carregue um logo da empresa</li>
                 <li>Veja a pré-visualização da placa</li>
                 <li>Clique em "Gerar Placa" para baixar</li>
                 <li>A imagem será criada em JPG alta resolução formato paisagem</li>
+                <li><strong>Novo:</strong> Deixe o nome vazio para gerar apenas com o logo centralizado</li>
             </ul>
         </div>
     </div>
@@ -276,13 +292,37 @@
             const previewCard = document.getElementById('previewCard');
             const previewName = document.getElementById('previewName');
             const logoPreviewCard = document.getElementById('logoPreviewCard');
+            const logoPreviewImg = document.getElementById('logoPreviewImg');
+            const visitorName = document.getElementById('visitorName').value.trim();
             
-            if (uploadedLogo) {
+            if (uploadedLogo && !visitorName) {
+                // Modo logo apenas
+                previewCard.className = 'preview-card logo-only';
+                previewName.className = 'preview-name hidden';
+                logoPreviewCard.style.display = 'block';
+                logoPreviewCard.style.margin = 'auto';
+                logoPreviewImg.className = 'logo-large';
+                logoPreviewImg.style.maxWidth = '200px';
+                logoPreviewImg.style.maxHeight = '120px';
+            } else if (uploadedLogo && visitorName) {
+                // Modo com logo e nome
                 previewCard.className = 'preview-card with-logo';
                 previewName.className = 'preview-name with-logo';
-            } else {
+                logoPreviewCard.style.display = 'block';
+                logoPreviewCard.style.margin = '2px auto 0';
+                logoPreviewImg.className = '';
+                logoPreviewImg.style.maxWidth = '90px';
+                logoPreviewImg.style.maxHeight = '50px';
+            } else if (!uploadedLogo && visitorName) {
+                // Modo apenas nome
                 previewCard.className = 'preview-card without-logo';
                 previewName.className = 'preview-name without-logo';
+                logoPreviewCard.style.display = 'none';
+            } else {
+                // Estado inicial
+                previewCard.className = 'preview-card without-logo';
+                previewName.className = 'preview-name without-logo';
+                logoPreviewCard.style.display = 'none';
             }
         }
 
@@ -305,7 +345,6 @@
                         const logoPreviewCard = document.getElementById('logoPreviewCard');
                         const logoPreviewImg = document.getElementById('logoPreviewImg');
                         logoPreviewImg.src = event.target.result;
-                        logoPreviewCard.style.display = 'block';
                         updatePreviewLayout();
                     };
                     img.src = event.target.result;
@@ -364,9 +403,8 @@
         function generatePlaca() {
             const visitorName = document.getElementById('visitorName').value.trim();
             
-            if (!visitorName) {
-                alert('Por favor, digite o nome do visitante!');
-                document.getElementById('visitorName').focus();
+            if (!visitorName && !uploadedLogo) {
+                alert('Por favor, digite o nome do visitante ou carregue um logo!');
                 return;
             }
 
@@ -387,89 +425,119 @@
                 ctx.lineWidth = 16;
                 ctx.strokeRect(margin, margin, width - (margin * 2), height - (margin * 2));
                 
-                const nameUpperCase = visitorName.toUpperCase();
-                
-                ctx.fillStyle = 'black';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                
-                let fontSize;
-                if (nameUpperCase.length <= 4) fontSize = 700;
-                else if (nameUpperCase.length <= 6) fontSize = 650;
-                else if (nameUpperCase.length <= 8) fontSize = 600;
-                else if (nameUpperCase.length <= 12) fontSize = 550;
-                else if (nameUpperCase.length <= 15) fontSize = 500;
-                else if (nameUpperCase.length <= 20) fontSize = 450;
-                else if (nameUpperCase.length <= 25) fontSize = 400;
-                else fontSize = 350;
-                
-                ctx.font = `900 ${fontSize}px Impact, 'Arial Black', sans-serif`;
-                
-                // Nome posicionado um pouco abaixo do centro para dar espaço ao logo
-                const textY = uploadedLogo ? (height / 2) + 200 : height / 2;
-
-                if (uploadedLogo) {
-                    // Recorta o espaço vazio do logo
+                if (uploadedLogo && !visitorName) {
+                    // Modo logo apenas - logo grande e centralizado
                     const logoSource = getTrimmedLogo(uploadedLogo);
-
-                    // Define a área disponível para o logo (metade superior da placa, com espaçamento)
-                    const availableLogoWidth = width - (margin * 2) - 400; // Margem lateral generosa
-                    const availableLogoHeight = Math.min(600, (height / 2) - margin - 300); // Altura limitada para não tapar o texto
-
+                    
+                    // Define área disponível para o logo (quase toda a placa com margem)
+                    const availableLogoWidth = width - (margin * 2) - 300;
+                    const availableLogoHeight = height - (margin * 2) - 300;
+                    
                     const logoAspect = logoSource.width / logoSource.height;
                     const availableAspect = availableLogoWidth / availableLogoHeight;
-
+                    
                     let finalLogoWidth, finalLogoHeight;
-
-                    // Redimensiona o logo respeitando os limites
+                    
                     if (logoAspect > availableAspect) {
-                        // Logo é mais largo que o espaço disponível
                         finalLogoWidth = availableLogoWidth;
                         finalLogoHeight = finalLogoWidth / logoAspect;
                     } else {
-                        // Logo é mais alto que o espaço disponível
                         finalLogoHeight = availableLogoHeight;
                         finalLogoWidth = finalLogoHeight * logoAspect;
                     }
-
-                    // Centraliza o logo horizontalmente e posiciona na parte superior com espaçamento
+                    
+                    // Centraliza o logo perfeitamente
                     const logoX = (width - finalLogoWidth) / 2;
-                    const logoY = margin + 100; // Margem do topo
-
+                    const logoY = (height - finalLogoHeight) / 2;
+                    
                     ctx.drawImage(logoSource, logoX, logoY, finalLogoWidth, finalLogoHeight);
-                }
-                
-                function wrapText(context, text, x, y, maxWidth, lineHeight) {
-                    const words = text.split(' ');
-                    let line = '', lines = [];
-                    for (let n = 0; n < words.length; n++) {
-                        const testLine = line + words[n] + ' ';
-                        const metrics = context.measureText(testLine);
-                        if (metrics.width > maxWidth && n > 0) {
-                            lines.push(line.trim());
-                            line = words[n] + ' ';
+                    
+                } else {
+                    // Modo com nome (com ou sem logo)
+                    const nameUpperCase = visitorName.toUpperCase();
+                    
+                    ctx.fillStyle = 'black';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    
+                    let fontSize;
+                    if (nameUpperCase.length <= 4) fontSize = 700;
+                    else if (nameUpperCase.length <= 6) fontSize = 650;
+                    else if (nameUpperCase.length <= 8) fontSize = 600;
+                    else if (nameUpperCase.length <= 12) fontSize = 550;
+                    else if (nameUpperCase.length <= 15) fontSize = 500;
+                    else if (nameUpperCase.length <= 20) fontSize = 450;
+                    else if (nameUpperCase.length <= 25) fontSize = 400;
+                    else fontSize = 350;
+                    
+                    ctx.font = `900 ${fontSize}px Impact, 'Arial Black', sans-serif`;
+                    
+                    const textY = uploadedLogo ? (height / 2) + 200 : height / 2;
+
+                    if (uploadedLogo) {
+                        const logoSource = getTrimmedLogo(uploadedLogo);
+                        const availableLogoWidth = width - (margin * 2) - 400;
+                        const availableLogoHeight = Math.min(600, (height / 2) - margin - 300);
+                        
+                        const logoAspect = logoSource.width / logoSource.height;
+                        const availableAspect = availableLogoWidth / availableLogoHeight;
+                        
+                        let finalLogoWidth, finalLogoHeight;
+                        
+                        if (logoAspect > availableAspect) {
+                            finalLogoWidth = availableLogoWidth;
+                            finalLogoHeight = finalLogoWidth / logoAspect;
                         } else {
-                            line = testLine;
+                            finalLogoHeight = availableLogoHeight;
+                            finalLogoWidth = finalLogoHeight * logoAspect;
+                        }
+                        
+                        const logoX = (width - finalLogoWidth) / 2;
+                        const logoY = margin + 100;
+                        
+                        ctx.drawImage(logoSource, logoX, logoY, finalLogoWidth, finalLogoHeight);
+                    }
+                    
+                    function wrapText(context, text, x, y, maxWidth, lineHeight) {
+                        const words = text.split(' ');
+                        let line = '', lines = [];
+                        for (let n = 0; n < words.length; n++) {
+                            const testLine = line + words[n] + ' ';
+                            const metrics = context.measureText(testLine);
+                            if (metrics.width > maxWidth && n > 0) {
+                                lines.push(line.trim());
+                                line = words[n] + ' ';
+                            } else {
+                                line = testLine;
+                            }
+                        }
+                        lines.push(line.trim());
+                        const startY = y - ((lines.length - 1) * lineHeight) / 2;
+                        for (let i = 0; i < lines.length; i++) {
+                            context.fillText(lines[i], x, startY + (i * lineHeight));
                         }
                     }
-                    lines.push(line.trim());
-                    const startY = y - ((lines.length - 1) * lineHeight) / 2;
-                    for (let i = 0; i < lines.length; i++) {
-                        context.fillText(lines[i], x, startY + (i * lineHeight));
-                    }
+                    
+                    const textAreaWidth = width - (margin * 2) - 200;
+                    const lineHeight = fontSize * 1.2;
+                    wrapText(ctx, nameUpperCase, width / 2, textY, textAreaWidth, lineHeight);
                 }
-                
-                const textAreaWidth = width - (margin * 2) - 200;
-                const lineHeight = fontSize * 1.2;
-                wrapText(ctx, nameUpperCase, width / 2, textY, textAreaWidth, lineHeight);
                 
                 canvas.toBlob(function(blob) {
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement('a');
                     const now = new Date();
                     const timestamp = now.toISOString().slice(0,16).replace(/[:-]/g,'').replace('T','-');
+                    
+                    let filename;
+                    if (visitorName) {
+                        filename = `placa-receptivo-${visitorName.toUpperCase().replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '-')}-${timestamp}.jpg`;
+                    } else {
+                        filename = `placa-receptivo-logo-${timestamp}.jpg`;
+                    }
+                    
                     link.href = url;
-                    link.download = `placa-receptivo-${nameUpperCase.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '-')}-${timestamp}.jpg`;
+                    link.download = filename;
                     link.style.display = 'none';
                     document.body.appendChild(link);
                     link.click();
